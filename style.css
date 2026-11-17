@@ -1,0 +1,88 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #f6f4ef;
+  color: #222;
+  line-height: 1.5;
+}
+
+header {
+  background: #2b2d42;
+  color: #fff;
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 2.5rem;
+  letter-spacing: 0.05em;
+}
+
+.tagline {
+  margin: 0.5rem 0 0;
+  opacity: 0.8;
+}
+
+main {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.quote-box {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+#quote {
+  font-size: 1.2rem;
+  font-style: italic;
+  min-height: 2em;
+}
+
+button {
+  background: #ef8354;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #d96c3f;
+}
+
+.wall {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+}
+
+.tile {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.15s, background-color 0.3s;
+}
+
+.tile:hover {
+  transform: scale(1.06);
+}
+
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: #777;
+  font-size: 0.9rem;
+}
