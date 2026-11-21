@@ -1,4 +1,4 @@
-// Scans assets/images/<location>/ folders and writes gallery-data.js.
+// Scans assets/images/<location>/ folders (images and videos) and writes gallery-data.js.
 // server.js calls this on every page load. Run directly to write a static file:  node build-gallery.js
 //
 // Optional: put an info.json in a location folder to override the defaults:
@@ -11,6 +11,7 @@ const ROOT = __dirname;
 const IMAGES_DIR = path.join(ROOT, "assets", "images");
 const OUTPUT = path.join(ROOT, "gallery-data.js");
 const IMAGE_EXT = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]);
+const VIDEO_EXT = new Set([".mp4", ".webm", ".mov", ".m4v"]);
 
 function prettify(name) {
   return name
@@ -37,11 +38,15 @@ function scanLocations() {
     .filter((d) => d.isDirectory())
     .map((d) => {
       const dir = path.join(IMAGES_DIR, d.name);
-      const images = fs
+      const media = fs
         .readdirSync(dir)
-        .filter((f) => IMAGE_EXT.has(path.extname(f).toLowerCase()))
-        .sort()
-        .map((f) => path.posix.join("assets", "images", d.name, f));
+        .map((f) => {
+          const ext = path.extname(f).toLowerCase();
+          const type = IMAGE_EXT.has(ext) ? "image" : VIDEO_EXT.has(ext) ? "video" : null;
+          return type && { type, src: path.posix.join("assets", "images", d.name, f) };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (a.src < b.src ? -1 : a.src > b.src ? 1 : 0));
       const info = readInfo(dir);
       return {
         id: d.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
@@ -49,10 +54,10 @@ function scanLocations() {
         place: info.place || "",
         year: info.year || "",
         description: info.description || "",
-        images,
+        media,
       };
     })
-    .filter((loc) => loc.images.length > 0)
+    .filter((loc) => loc.media.length > 0)
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
@@ -67,6 +72,7 @@ module.exports = { scanLocations, buildGalleryScript };
 if (require.main === module) {
   const locations = scanLocations();
   fs.writeFileSync(OUTPUT, buildGalleryScript(locations));
-  const total = locations.reduce((n, l) => n + l.images.length, 0);
-  console.log(`Wrote ${path.relative(ROOT, OUTPUT)}: ${locations.length} locations, ${total} images.`);
+  const all = locations.flatMap((l) => l.media);
+  const videos = all.filter((m) => m.type === "video").length;
+  console.log(`Wrote ${path.relative(ROOT, OUTPUT)}: ${locations.length} locations, ${all.length - videos} images, ${videos} videos.`);
 }

@@ -39,14 +39,15 @@
     <p class="copyright">© <span id="year"></span> · Made with <span aria-label="love">❤️</span> by Carina</p>
   </footer>
 
-  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Billedfremviser" hidden>
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Fremviser" hidden>
     <button class="lb-btn lb-close" id="lb-close" aria-label="Luk">✕</button>
-    <button class="lb-btn lb-prev" id="lb-prev" aria-label="Forrige billede">‹</button>
+    <button class="lb-btn lb-prev" id="lb-prev" aria-label="Forrige">‹</button>
     <figure class="lb-figure">
       <img id="lb-img" alt="">
+      <video id="lb-video" controls playsinline preload="metadata" hidden></video>
       <figcaption id="lb-caption"></figcaption>
     </figure>
-    <button class="lb-btn lb-next" id="lb-next" aria-label="Næste billede">›</button>
+    <button class="lb-btn lb-next" id="lb-next" aria-label="Næste">›</button>
   </div>
 
   <script src="gallery-data.js"></script>

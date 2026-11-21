@@ -27,6 +27,12 @@ Kopiér billederne ind i den nye mappe.
 - Billederne bliver beskåret til samme format (3:2) i oversigten. I stor visning ses hele billedet.
 - Mapper uden billeder bliver ikke vist.
 
+**Videoer:** Du kan også lægge videoer i mappen. De vises i galleriet sammen med billederne (med en afspil-knap) og afspilles, når man klikker på dem.
+
+- Tilladte filtyper: `.mp4`, `.webm`, `.mov` og `.m4v`. Brug helst `.mp4` (H.264), da det virker i alle browsere. `.mov` virker ikke altid uden for Safari.
+- Videoerne sorteres sammen med billederne efter filnavn.
+- Hold filerne små: eksporter fx i 1080p i stedet for 4K. GitHub afviser filer over 100 MB, og store filer er langsomme at hente på mobil.
+
 ### 3. Giv galleriet en titel og beskrivelse (valgfrit)
 
 Mappens navn bruges som titel. Første bogstav i hvert ord bliver gjort stort, og `-` og `_` bliver til mellemrum. Vil du have en anden titel, eller vise sted, år og en kort beskrivelse, så læg en fil med navnet `info.json` i mappen:

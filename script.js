@@ -19,15 +19,30 @@ function el(tag, attrs = {}, children = []) {
 }
 
 // ---------- Stats + hero ----------
-const totalImages = locations.reduce((n, loc) => n + loc.images.length, 0);
+const allMedia = locations.flatMap((loc) => loc.media);
+const allImages = allMedia.filter((m) => m.type === "image");
+const totalVideos = allMedia.length - allImages.length;
 stats.append(
   el("div", { class: "stat" }, [el("strong", { text: locations.length }), el("span", { text: "Steder" })]),
-  el("div", { class: "stat" }, [el("strong", { text: totalImages }), el("span", { text: "Billeder" })])
+  el("div", { class: "stat" }, [el("strong", { text: allImages.length }), el("span", { text: "Billeder" })]),
+  totalVideos ? el("div", { class: "stat" }, [el("strong", { text: totalVideos }), el("span", { text: totalVideos === 1 ? "Video" : "Videoer" })]) : null
 );
 
-if (totalImages) {
-  const all = locations.flatMap((loc) => loc.images);
-  const src = all[Math.floor(Math.random() * all.length)];
+function countLabel(media) {
+  const videos = media.filter((m) => m.type === "video").length;
+  const images = media.length - videos;
+  return [
+    images ? `${images} ${images === 1 ? "billede" : "billeder"}` : "",
+    videos ? `${videos} ${videos === 1 ? "video" : "videoer"}` : "",
+  ].filter(Boolean).join(" · ");
+}
+
+function itemLabel(loc, index) {
+  return `${loc.title}, ${loc.media[index].type === "video" ? "video" : "billede"} ${index + 1}`;
+}
+
+if (allImages.length) {
+  const { src } = allImages[Math.floor(Math.random() * allImages.length)];
   const heroBg = document.getElementById("hero-bg");
   const probe = new Image();
   probe.onload = () => {
@@ -72,13 +87,21 @@ locations.forEach((loc, locIndex) => {
       el("h2", { text: loc.title }),
       meta || loc.description ? el("p", { class: "location-meta", text: [meta, loc.description].filter(Boolean).join(" — ") }) : null,
     ]),
-    el("span", { class: "location-count", text: `${loc.images.length} ${loc.images.length === 1 ? "billede" : "billeder"}` }),
+    el("span", { class: "location-count", text: countLabel(loc.media) }),
   ]);
 
   const gallery = el("div", { class: "gallery" });
-  loc.images.forEach((src, imgIndex) => {
-    const img = el("img", { src, alt: `Vægmaleri ${loc.title}, billede ${imgIndex + 1}`, loading: "lazy", decoding: "async" });
-    const tile = el("button", { class: "tile", type: "button", "aria-label": `Åbn ${loc.title} billede ${imgIndex + 1}` }, img);
+  loc.media.forEach((item, imgIndex) => {
+    const isVideo = item.type === "video";
+    // For videos, "#t=0.1" makes the browser show an early frame as the thumbnail.
+    const thumb = isVideo
+      ? el("video", { src: `${item.src}#t=0.1`, preload: "metadata", muted: "", playsinline: "", "aria-hidden": "true", tabindex: "-1" })
+      : el("img", { src: item.src, alt: `Vægmaleri ${itemLabel(loc, imgIndex)}`, loading: "lazy", decoding: "async" });
+    const tile = el(
+      "button",
+      { class: isVideo ? "tile tile-video" : "tile", type: "button", "aria-label": `Åbn ${itemLabel(loc, imgIndex)}` },
+      [thumb, isVideo ? el("span", { class: "play-badge", "aria-hidden": "true" }) : null]
+    );
     tile.style.transitionDelay = `${(imgIndex % 3) * 80}ms`;
     tile.addEventListener("click", () => openLightbox(locIndex, imgIndex));
     gallery.append(tile);
@@ -114,21 +137,41 @@ document.querySelectorAll(".location").forEach((s) => navSpy.observe(s));
 // ---------- Lightbox ----------
 const lightbox = document.getElementById("lightbox");
 const lbImg = document.getElementById("lb-img");
+const lbVideo = document.getElementById("lb-video");
 const lbCaption = document.getElementById("lb-caption");
 let current = { loc: 0, img: 0 };
 let lastFocus = null;
 
+function stopVideo() {
+  lbVideo.pause();
+  lbVideo.removeAttribute("src");
+  lbVideo.load(); // release the network connection
+}
+
 function showImage() {
   const loc = locations[current.loc];
-  lbImg.src = loc.images[current.img];
-  lbImg.alt = `Vægmaleri ${loc.title}, billede ${current.img + 1}`;
-  lbImg.style.animation = "none";
-  void lbImg.offsetWidth; // restart the pop-in animation
-  lbImg.style.animation = "";
-  const fileName = decodeURIComponent(loc.images[current.img].split("/").pop()).replace(/\.[^.]+$/, "");
+  const item = loc.media[current.img];
+  const isVideo = item.type === "video";
+  stopVideo();
+  lbImg.hidden = isVideo;
+  lbVideo.hidden = !isVideo;
+  const target = isVideo ? lbVideo : lbImg;
+  if (isVideo) {
+    lbVideo.src = item.src;
+    lbVideo.setAttribute("aria-label", `Vægmaleri ${itemLabel(loc, current.img)}`);
+    lbVideo.play().catch(() => {}); // autoplay may be blocked; controls are shown either way
+  } else {
+    lbImg.removeAttribute("src"); // avoid flashing the previous image
+    lbImg.src = item.src;
+    lbImg.alt = `Vægmaleri ${itemLabel(loc, current.img)}`;
+  }
+  target.style.animation = "none";
+  void target.offsetWidth; // restart the pop-in animation
+  target.style.animation = "";
+  const fileName = decodeURIComponent(item.src.split("/").pop()).replace(/\.[^.]+$/, "");
   lbCaption.replaceChildren(
     el("strong", { text: loc.title }),
-    ` — ${current.img + 1} / ${loc.images.length}`,
+    ` — ${current.img + 1} / ${loc.media.length}`,
     el("span", { class: "lb-file", text: fileName })
   );
 }
@@ -143,13 +186,14 @@ function openLightbox(locIndex, imgIndex) {
 }
 
 function closeLightbox() {
+  stopVideo();
   lightbox.hidden = true;
   document.body.style.overflow = "";
   if (lastFocus) lastFocus.focus();
 }
 
 function step(dir) {
-  const count = locations[current.loc].images.length;
+  const count = locations[current.loc].media.length;
   current.img = (current.img + dir + count) % count;
   showImage();
 }
@@ -164,13 +208,19 @@ lightbox.addEventListener("click", (e) => {
 document.addEventListener("keydown", (e) => {
   if (lightbox.hidden) return;
   if (e.key === "Escape") closeLightbox();
+  else if (e.target === lbVideo) return; // arrows seek inside a focused video
   else if (e.key === "ArrowLeft") step(-1);
   else if (e.key === "ArrowRight") step(1);
 });
 
 // Swipe on touch devices
 let touchX = null;
-lightbox.addEventListener("touchstart", (e) => (touchX = e.touches[0].clientX), { passive: true });
+lightbox.addEventListener(
+  "touchstart",
+  // Don't treat dragging the video's progress bar as a swipe
+  (e) => (touchX = e.target === lbVideo ? null : e.touches[0].clientX),
+  { passive: true }
+);
 lightbox.addEventListener("touchend", (e) => {
   if (touchX === null) return;
   const dx = e.changedTouches[0].clientX - touchX;
